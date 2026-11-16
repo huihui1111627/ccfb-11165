@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>支付数据归档平台</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+  :root {
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#2d3748;
+    --text:#e6edf3; --muted:#8b949e; --accent:#3b82f6; --accent2:#1d4ed8;
+    --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --purple:#a78bfa;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; }
+  body {
+    background:var(--bg); color:var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  }
+  a { color: var(--accent); text-decoration:none; }
+  .shell { display:grid; grid-template-columns: 220px 1fr; min-height:100vh; }
+  aside {
+    background:var(--panel); border-right:1px solid var(--border);
+    padding:20px 14px; position:sticky; top:0; height:100vh;
+  }
+  .brand { display:flex; gap:10px; align-items:center; margin:0 6px 26px; }
+  .logo { width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+          display:grid; place-items:center; font-weight:800; font-size:16px; }
+  .brand h1 { font-size:14px; margin:0; line-height:1.25; }
+  .brand small { color:var(--muted); font-size:11px; }
+  nav a {
+    display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:8px;
+    color:var(--muted); margin-bottom:3px; font-size:13px;
+  }
+  nav a:hover { background:var(--panel2); color:var(--text); }
+  nav a.active { background:#1e3a8a33; color:#93c5fd; box-shadow: inset 0 0 0 1px #1e40af66; }
+  nav .ico { width:18px; text-align:center; }
+  .side-foot { position:absolute; bottom:18px; left:20px; right:20px; color:var(--muted); font-size:11px; }
+  main { padding:26px 30px 60px; max-width:1500px; }
+  h2 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--muted); font-size:13px; margin-bottom:20px; }
+  .grid { display:grid; gap:14px; }
+  .g4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  .g3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .g2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  @media (max-width:1100px){ .g4{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:760px){ .shell{grid-template-columns:1fr} aside{display:none} .g4,.g3,.g2{grid-template-columns:1fr} main{padding:18px} }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px 18px; }
+  .card h3 { margin:0 0 12px; font-size:13px; color:var(--muted); font-weight:600; letter-spacing:.02em; }
+  .kpi { font-size:26px; font-weight:700; letter-spacing:-.02em; }
+  .kpi small { font-size:12px; color:var(--muted); font-weight:500; margin-left:4px; }
+  .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .between { justify-content:space-between; }
+  button, .btn {
+    font:inherit; font-size:13px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); padding:7px 13px; cursor:pointer;
+    transition:.12s border-color,.12s background;
+  }
+  button:hover, .btn:hover { border-color:#4b5563; background:#232b3a; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  button.primary:hover { background:var(--accent2); }
+  button.danger { background:#7f1d1d33; border-color:#991b1b; color:#fca5a5; }
+  button.danger:hover { background:#7f1d1d66; }
+  button.ghost { background:transparent; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  button.sm { padding:3px 9px; font-size:12px; border-radius:6px; }
+  input, select {
+    font:inherit; font-size:13px; background:#0b1220; color:var(--text);
+    border:1px solid var(--border); border-radius:8px; padding:7px 10px; min-width:0;
+  }
+  input:focus, select:focus { outline:none; border-color:var(--accent); }
+  label.field { display:flex; flex-direction:column; gap:5px; font-size:12px; color:var(--muted); }
+  label.field input, label.field select { width:100%; }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  th, td { text-align:left; padding:9px 10px; border-bottom:1px solid #212a38; vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+  tr:hover td { background:#ffffff05; }
+  .mono { font-family:var(--mono); font-size:11.5px; }
+  .muted { color:var(--muted); }
+  .tag { display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:2px 8px;
+         border-radius:999px; border:1px solid transparent; white-space:nowrap; }
+  .tag::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .t-green{ color:#4ade80; background:#052e16; border-color:#14532d; }
+  .t-amber{ color:#fbbf24; background:#3b2605; border-color:#713f12; }
+  .t-red  { color:#f87171; background:#3b0a0a; border-color:#7f1d1d; }
+  .t-blue { color:#93c5fd; background:#0c1e3e; border-color:#1e40af; }
+  .t-gray { color:#9ca3af; background:#1f2937; border-color:#374151; }
+  .t-purple{color:#c4b5fd; background:#2e1065; border-color:#5b21b6; }
+  .bar { height:8px; border-radius:999px; background:#0b1220; overflow:hidden; border:1px solid #1f2937; }
+  .bar > i { display:block; height:100%; background:linear-gradient(90deg,#3b82f6,#8b5cf6); }
+  .progress { height:7px; background:#0b1220; border-radius:999px; overflow:hidden; }
+  .progress > i { display:block; height:100%; background:linear-gradient(90deg,#22c55e,#3b82f6); transition:width .4s; }
+  .empty { color:var(--muted); text-align:center; padding:26px 10px; font-size:13px; }
+  .banner { border:1px solid; border-radius:10px; padding:11px 14px; font-size:13px; margin-bottom:16px; }
+  .banner.err { border-color:#7f1d1d; background:#7f1d1d22; color:#fca5a5; }
+  .banner.ok { border-color:#14532d; background:#14532d22; color:#86efac; }
+  .split { display:grid; grid-template-columns: 1.35fr 1fr; gap:16px; }
+  @media (max-width:1000px){ .split{grid-template-columns:1fr} }
+  .modal-bg { position:fixed; inset:0; background:#000a; display:grid; place-items:center; padding:20px; z-index:50; }
+  .modal { background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:22px; width:560px; max-width:100%; max-height:88vh; overflow:auto; }
+  .modal h3 { margin:0 0 4px; font-size:16px; }
+  .modal .sub { margin-bottom:16px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:13px; }
+  .form-grid .full { grid-column:1 / -1; }
+  .kv { display:grid; grid-template-columns: 150px 1fr; gap:6px 14px; font-size:12.5px; }
+  .kv dt { color:var(--muted); }
+  .kv dd { margin:0; }
+  .sparkline { display:flex; align-items:flex-end; gap:2px; height:70px; margin-top:8px; }
+  .sparkline > div { flex:1; background:#1e40af; border-radius:2px 2px 0 0; min-height:2px; opacity:.85; }
+  .legend { display:flex; gap:16px; font-size:11.5px; color:var(--muted); flex-wrap:wrap; }
+  .legend i { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px; }
+  .toast { position:fixed; bottom:24px; right:24px; background:#111827; border:1px solid var(--border);
+           border-radius:10px; padding:12px 16px; font-size:13px; z-index:100; box-shadow:0 10px 40px #000a; max-width:420px; }
+  .toast.err { border-color:#7f1d1d; color:#fca5a5; }
+  .toast.ok { border-color:#14532d; color:#86efac; }
+  .tabs { display:flex; gap:6px; margin-bottom:16px; }
+  .tabs button { background:transparent; border:1px solid transparent; color:var(--muted); }
+  .tabs button.active { background:var(--panel2); border-color:var(--border); color:var(--text); }
+  .seg-cell { font-family:var(--mono); font-size:11px; color:var(--muted); max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  code.inline { background:#0b1220; border:1px solid var(--border); border-radius:5px; padding:1px 6px; font-family:var(--mono); font-size:11.5px; }
+  .section-title { font-size:13px; color:var(--muted); margin:22px 0 10px; font-weight:600; }
+  .stat-list { display:flex; flex-direction:column; gap:9px; font-size:12.5px; }
+  .stat-list .line { display:flex; justify-content:space-between; border-bottom:1px dashed #212a38; padding-bottom:7px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside>
+    <div class="brand">
+      <div class="logo">PA</div>
+      <div><h1>支付数据归档平台</h1><small>Hot / Cold Tiering</small></div>
+    </div>
+    <nav>
+      <a href="#policies" data-nav="policies"><span class="ico">⚙</span>归档策略</a>
+      <a href="#jobs" data-nav="jobs"><span class="ico">▤</span>归档任务</a>
+      <a href="#storage" data-nav="storage"><span class="ico">◫</span>存储分布</a>
+      <a href="#query" data-nav="query"><span class="ico">⌕</span>归档查询</a>
+      <a href="#holds" data-nav="holds"><span class="ico">⚖</span>保全记录</a>
+    </nav>
+    <div class="side-foot">
+      <div id="clock" class="mono"></div>
+      <div style="margin-top:6px">监管最低留存 <span id="regmin">–</span> 天</div>
+    </div>
+  </aside>
+  <main id="view"></main>
+</div>
+<div id="toasts"></div>
+<script>
+const $ = (s, r=document) => r.querySelector(s);
+const h = (s) => s == null ? '' : String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = (n) => (n == null ? '–' : Number(n).toLocaleString('en-US'));
+const bytes = (n) => {
+  if (n == null) return '–';
+  n = Number(n); const u = ['B','KB','MB','GB','TB']; let i = 0;
+  while (n >= 1024 && i < u.length-1) { n /= 1024; i++; }
+  return (i === 0 ? n.toFixed(0) : n.toFixed(1)) + ' ' + u[i];
+};
+const pct = (a,b) => b > 0 ? (100*a/b).toFixed(1)+'%' : '–';
+const dt = (s) => s ? new Date(s).toLocaleString('zh-CN', {hour12:false}) : '–';
+const tshort = (us) => us ? new Date(us/1000).toISOString().slice(0,10) : '–';
+const statusTag = (s) => {
+  const m = {succeeded:'t-green', running:'t-blue', queued:'t-gray', failed:'t-red', cancelled:'t-amber'};
+  return `<span class="tag ${m[s]||'t-gray'}">${h(s)}</span>`;
+};
+const phaseLabel = (p) => ({queued:'排队', starting:'启动', snapshot:'快照', archiving:'迁移中',
+  verifying:'校验中', evicting:'删除源数据', planning:'计划', rewriting:'重写段', purging_source:'清理源库',
+  manifest:'生成清单', done:'完成', succeeded:'完成', failed:'失败', cancelled:'已取消'}[p] || p);
+
+function toast(msg, kind='ok') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind; el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => el.remove(), 4200);
+}
+
+async function api(path, opts={}) {
+  const res = await fetch(path, {headers:{'Content-Type':'application/json'}, ...opts});
+  const text = await res.text();
+  let body; try { body = text ? JSON.parse(text) : {}; } catch { body = {error:text}; }
+  if (!res.ok) throw new Error(body.error || ('HTTP ' + res.status));
+  return body;
+}
+
+const state = { route:'', policies:[], jobs:[], holds:[], manifests:[], status:null, storage:null, timer:null };
+
+function setActiveNav(route) {
+  document.querySelectorAll('nav a').forEach(a => a.classList.toggle('active', a.dataset.nav === route));
+}
+
+// ---------- shared renderers ----------
+function kpi(label, value, sub='') {
+  return `<div class="card"><h3>${label}</h3><div class="kpi">${value}</div><div class="muted" style="font-size:12px;margin-top:4px">${sub}</div></div>`;
+}
+
+async function loadStatus() {
+  state.status = await api('/api/status');
+  $('#regmin').textContent = fmt(state.status.config.regulatory_min);
+}
+
+function coldQueryMetricsCard(m) {
+  if (!m) return '';
+  const reject = m.total > 0 ? (100*m.throttled/m.total).toFixed(1)+'%' : '0%';
+  return `<div class="card">
+    <h3>冷查询准入与剪枝（进程累计）</h3>
+    <div class="stat-list">
+      <div class="line"><span>查询总数</span><b>${fmt(m.total)}</b></div>
+      <div class="line"><span>平均 / 最大延迟</span><b>${m.avg_latency_ms.toFixed(1)} / ${m.max_latency_ms.toFixed(1)} ms</b></div>
+      <div class="line"><span>限流拒绝</span><b>${fmt(m.throttled)} (${reject})</b></div>
+      <div class="line"><span>块剪枝 / 扫描</span><b>${fmt(m.blocks_pruned)} / ${fmt(m.blocks_scanned)}</b></div>
+      <div class="line"><span>读取压缩字节</span><b>${bytes(m.bytes_read)}</b></div>
+    </div>
+  </div>`;
+}
+
+// ---------- Policies ----------
+async function renderPolicies() {
+  const [policies, status] = await Promise.all([api('/api/policies'), api('/api/status')]);
+  state.policies = policies; state.status = status;
+  const src = status.source, cold = status.cold;
+  const ratio = cold.bytes > 0 ? (cold.raw_bytes / cold.bytes) : 0;
+  $('#view').innerHTML = `
+    <div class="row between"><div><h2>归档策略</h2>
+      <div class="sub">按表与时间字段定义冷热分界和销毁期限；销毁期限受监管最低留存约束。</div></div>
+      <button class="primary" id="add-policy">+ 新建策略</button></div>
+    <div class="grid g4">
+      ${kpi('源库行数', fmt(src.rows), '堆 ' + bytes(src.heap_bytes) + ' · 索引 ' + bytes(src.index_bytes))}
+      ${kpi('待归档行数', fmt(src.pending_archive), '冷分界之前且未归档')}
+      ${kpi('冷存储行数', fmt(cold.rows), fmt(cold.segments) + ' 个段 · ' + bytes(cold.bytes))}
+      ${kpi('冷存压缩比', cold.raw_bytes > 0 ? (cold.raw_bytes/cold.bytes).toFixed(1)+'×' : '–', '对源库估算 ' + (src.rows > 0 ? ((src.heap_bytes+src.index_bytes)/src.rows).toFixed(0)+' B/行' : '–'))}
+    </div>
+    <div class="section-title">策略列表</div>
+    <div class="card" style="padding:4px 0">
+      <table>
+        <thead><tr><th>策略</th><th>时间字段</th><th>转冷</th><th>销毁</th><th>批次 / 段大小</th><th>待归档</th><th>可销毁段</th><th>状态</th><th></th></tr></thead>
+        <tbody>${policies.map(p => `
+          <tr>
+            <td><b>${h(p.table_name)}</b><div class="muted" style="font-size:11.5px">${h(p.description||'')}</div></td>
+            <td class="mono">${h(p.time_field)}</td>
+            <td>${p.cold_after_days>=365 ? (p.cold_after_days/365).toFixed(1)+' 年' : p.cold_after_days+' 天'}<div class="muted" style="font-size:11px">${fmt(p.cold_after_days)} 天</div></td>
+            <td>${p.destroy_after_days>=365 ? (p.destroy_after_days/365).toFixed(1)+' 年' : p.destroy_after_days+' 天'}<div class="muted" style="font-size:11px">${fmt(p.destroy_after_days)} 天</div></td>
+            <td class="mono">${fmt(p.batch_rows)} / ${fmt(p.target_segment_rows)}</td>
+            <td>${fmt(p.cold_candidates)}</td>
+            <td>${p.destroy_ready_segments > 0 ? `<span class="tag t-amber">${p.destroy_ready_segments} 段</span>` : '<span class="muted">0</span>'}</td>
+            <td>${p.enabled ? '<span class="tag t-green">启用</span>' : '<span class="tag t-gray">停用</span>'}</td>
+            <td style="white-space:nowrap">
+              <button class="sm" data-edit="${p.id}">编辑</button>
+              <button class="sm primary" data-archive="${p.id}" ${p.cold_candidates>0?'':'disabled'}>转冷</button>
+              <button class="sm danger" data-destroy="${p.id}" ${p.destroy_ready_segments>0?'':'disabled'}>销毁</button>
+            </td>
+          </tr>`).join('') || `<tr><td colspan="9" class="empty">暂无策略，请新建。</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+    <div class="split" style="margin-top:16px">
+      ${coldQueryMetricsCard(status.cold_query_metrics)}
+      <div class="card">
+        <h3>冷存储缓存</h3>
+        <div class="stat-list">
+          <div class="line"><span>缓存块 / 占用</span><b>${fmt(cold.cache_blocks)} / ${bytes(cold.cache_bytes)}</b></div>
+          <div class="line"><span>命中 / 未命中</span><b>${fmt(cold.cache_hits)} / ${fmt(cold.cache_misses)}</b></div>
+          <div class="line"><span>冷数据时间范围</span><b>${tshort(cold.min_time)} → ${tshort(cold.max_time)}</b></div>
+          <div class="line"><span>并发 / QPS 上限</span><b>${status.config ? '' : ''}${4} / ${10}</b></div>
+        </div>
+      </div>
+    </div>`;
+  $('#add-policy').onclick = () => policyModal(null);
+  document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => policyModal(state.policies.find(p => p.id == b.dataset.edit)));
+  document.querySelectorAll('[data-archive]').forEach(b => b.onclick = () => runJob('archive', b.dataset.archive));
+  document.querySelectorAll('[data-destroy]').forEach(b => b.onclick = () => runJob('destroy', b.dataset.destroy));
+}
+
+function policyModal(p) {
+  const isNew = !p;
+  const v = p || {table_name:'transactions', time_field:'created_at', pk_field:'id', cold_after_days:1095,
+                  destroy_after_days:1825, batch_rows:50000, target_segment_rows:1000000, enabled:true, description:''};
+  const bg = document.createElement('div'); bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal">
+    <h3>${isNew ? '新建归档策略' : '编辑策略 #'+p.id}</h3>
+    <div class="sub">时间分界以 created_at 为准；销毁期限不得低于监管最低留存 (${state.status.config.regulatory_min} 天)。</div>
+    <div class="form-grid">
+      <label class="field">表名<input id="f-table" value="${h(v.table_name)}" ${isNew?'':'disabled'}></label>
+      <label class="field">时间字段<input id="f-time" value="${h(v.time_field)}" ${isNew?'':'disabled'}></label>
+      <label class="field">转冷天数<input id="f-cold" type="number" min="1" value="${v.cold_after_days}"></label>
+      <label class="field">销毁天数<input id="f-destroy" type="number" min="1" value="${v.destroy_after_days}"></label>
+      <label class="field">每批行数<input id="f-batch" type="number" value="${v.batch_rows}"></label>
+      <label class="field">目标段行数<input id="f-seg" type="number" value="${v.target_segment_rows}"></label>
+      <label class="field full">描述<input id="f-desc" value="${h(v.description||'')}"></label>
+      <label class="field full" style="flex-direction:row;align-items:center;gap:8px">
+        <input id="f-enabled" type="checkbox" style="width:auto" ${v.enabled?'checked':''}> 启用调度（自动转冷 / 到期销毁）</label>
+    </div>
+    <div class="row" style="justify-content:flex-end;margin-top:18px">
+      <button id="m-cancel">取消</button>
+      <button class="primary" id="m-save">保存</button>
+    </div>
+  </div>`;
+  document.body.appendChild(bg);
+  bg.querySelector('#m-cancel').onclick = () => bg.remove();
+  bg.onclick = (e) => { if (e.target === bg) bg.remove(); };
+  bg.querySelector('#m-save').onclick = async () => {
+    const body = {
+      table_name: $('#f-table').value, time_field: $('#f-time').value, pk_field: 'id',
+      cold_after_days: +$('#f-cold').value, destroy_after_days: +$('#f-destroy').value,
+      batch_rows: +$('#f-batch').value, target_segment_rows: +$('#f-seg').value,
+      enabled: $('#f-enabled').checked, description: $('#f-desc').value,
+    };
+    try {
+      if (isNew) await api('/api/policies', {method:'POST', body: JSON.stringify(body)});
+      else await api('/api/policies/'+p.id, {method:'PUT', body: JSON.stringify(body)});
+      bg.remove(); toast('策略已保存'); render();
+    } catch (e) { toast(e.message, 'err'); }
+  };
+}
+
+async function runJob(type, policyId) {
+  if (type === 'destroy' && !confirm('销毁会永久删除冷存储中已到期且未保全的数据，并生成销毁清单。继续？')) return;
+  try {
+    const job = await api(`/api/policies/${policyId}/${type}`, {method:'POST'});
+    toast((type==='archive'?'归档':'销毁') + '任务已排队 #' + job.id);
+    location.hash = '#jobs';
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+// ---------- Jobs ----------
+async function renderJobs() {
+  const [jobs, status] = await Promise.all([api('/api/jobs?limit=60'), api('/api/status')]);
+  state.jobs = jobs; state.status = status;
+  const running = jobs.filter(j => j.status === 'running' || j.status === 'queued').length;
+  $('#view').innerHTML = `
+    <div class="row between"><div><h2>归档任务</h2>
+      <div class="sub">迁移分批读取、写完校验通过后才删除源数据；删除按小批次进行，避免长时间锁表。</div></div>
+      <div class="row"><span class="muted" style="font-size:12px">运行中 ${running}</span>
+      <button id="refresh">刷新</button></div></div>
+    <div class="card" style="padding:4px 0">
+      <table>
+        <thead><tr><th>任务</th><th>类型</th><th>状态</th><th>阶段</th><th>进度</th><th>数据量</th><th>开始</th><th>耗时</th><th></th></tr></thead>
+        <tbody>${jobs.map(j => {
+          const prog = j.total_rows > 0 ? Math.min(100, 100*j.progress_rows/j.total_rows) : (j.status==='succeeded'?100:0);
+          const dur = j.started_at ? ((j.finished_at ? new Date(j.finished_at) : new Date()) - new Date(j.started_at))/1000 : 0;
+          return `<tr>
+            <td><a href="#job/${j.id}"><b>#${j.id}</b></a><div class="muted" style="font-size:11px">policy ${j.policy_id}</div></td>
+            <td>${j.type==='archive'?'转冷':j.type==='destroy'?'销毁':j.type}</td>
+            <td>${statusTag(j.status)}</td>
+            <td>${phaseLabel(j.phase)}${j.detail?`<div class="muted" style="font-size:11px">${h(j.detail)}</div>`:''}</td>
+            <td style="min-width:150px"><div class="progress"><i style="width:${prog}%"></i></div>
+              <div class="muted mono" style="font-size:11px;margin-top:4px">${fmt(j.progress_rows)} / ${fmt(j.total_rows)}</div></td>
+            <td class="mono">${bytes(j.bytes_written)}${j.rows_destroyed?`<div class="muted">删除 ${fmt(j.rows_destroyed)}</div>`:''}${j.rows_held?`<div style="color:#fbbf24">保全 ${fmt(j.rows_held)}</div>`:''}</td>
+            <td class="mono" style="font-size:11px">${dt(j.started_at||j.created_at)}</td>
+            <td class="mono">${dur ? (dur<60?dur.toFixed(1)+'s':(dur/60).toFixed(1)+'m') : '–'}</td>
+            <td><button class="sm" data-job="${j.id}">详情</button>
+              ${(j.status==='running'||j.status==='queued')?`<button class="sm danger" data-cancel="${j.id}">取消</button>`:''}</td>
+          </tr>`; }).join('') || `<tr><td colspan="9" class="empty">暂无任务</td></tr>`}
+        </tbody>
+      </table>
+    </div>`;
+  $('#refresh').onclick = () => render();
+  document.querySelectorAll('[data-job]').forEach(b => b.onclick = () => location.hash = '#job/'+b.dataset.job);
+  document.querySelectorAll('[data-cancel]').forEach(b => b.onclick = async () => {
+    try { await api('/api/jobs/'+b.dataset.cancel+'/cancel', {method:'POST'}); toast('已请求取消 #'+b.dataset.cancel); render(); }
+    catch(e){ toast(e.message,'err'); }
+  });
+}
+
+async function renderJobDetail(id) {
+  const {job, logs} = await api('/api/jobs/'+id);
+  const prog = job.total_rows > 0 ? Math.min(100, 100*job.progress_rows/job.total_rows) : (job.status==='succeeded'?100:0);
+  $('#view').innerHTML = `
+    <div class="row between"><div><h2>任务 #${job.id} <span class="muted" style="font-size:14px;font-weight:400">${job.type}</span></h2>
+      <div class="sub">策略 ${job.policy_id} · 创建于 ${dt(job.created_at)}</div></div>
+      <div class="row"><button id="back">← 返回任务</button>
+      ${(job.status==='running'||job.status==='queued')?`<button class="danger" id="cancel">取消任务</button>`:''}</div></div>
+    <div class="grid g4">
+      ${kpi('状态', statusTag(job.status), phaseLabel(job.phase))}
+      ${kpi('进度行数', fmt(job.progress_rows), '目标 ' + fmt(job.total_rows))}
+      ${kpi('写入冷存', bytes(job.bytes_written), job.segments_done + ' 段')}
+      ${kpi(job.type==='destroy'?'删除 / 保全':'源库删除 / 保全', fmt(job.rows_destroyed)+' / '+fmt(job.rows_held), '')}
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h3>阶段进度</h3>
+      <div class="progress" style="height:10px"><i style="width:${prog}%"></i></div>
+      <div class="row between muted" style="margin-top:8px;font-size:12px">
+        <span>${phaseLabel(job.phase)}</span><span>${prog.toFixed(1)}%</span></div>
+      ${job.error?`<div class="banner err" style="margin-top:14px">${h(job.error)}</div>`:''}
+    </div>
+    <div class="section-title">任务日志</div>
+    <div class="card" style="padding:10px 14px;max-height:460px;overflow:auto">
+      <table><tbody>${logs.length ? logs.map(l => `<tr>
+        <td class="mono muted" style="width:170px;white-space:nowrap">${dt(l.ts)}</td>
+        <td style="width:70px"><span class="tag ${l.level==='error'?'t-red':l.level==='warn'?'t-amber':'t-gray'}">${h(l.level)}</span></td>
+        <td class="mono" style="font-size:11.5px">${h(l.message)}</td></tr>`).join('')
+        : `<tr><td class="empty">暂无日志</td></tr>`}</tbody></table>
+    </div>`;
+  $('#back').onclick = () => location.hash = '#jobs';
+  const c = $('#cancel'); if (c) c.onclick = async () => { await api('/api/jobs/'+id+'/cancel',{method:'POST'}); render(); };
+}
+
+// ---------- Storage ----------
+async function renderStorage() {
+  const [s, status] = await Promise.all([api('/api/storage'), api('/api/status')]);
+  state.storage = s; state.status = status;
+  const src = s.source, cold = s.cold;
+  const totalSrc = src.total_bytes;
+  const coldVsSrc = totalSrc > 0 ? 100*cold.bytes/totalSrc : 0;
+  const maxRows = Math.max(1, ...s.by_month.map(b => b.rows));
+  const colW = Math.max(1, 100/Math.max(1,s.by_month.length));
+  $('#view').innerHTML = `
+    <div class="row between"><div><h2>存储分布</h2>
+      <div class="sub">热数据在源库，冷数据为 zstd 压缩的列存段；月粒度展示已迁移数据量与压缩效果。</div></div>
+      <button id="refresh">刷新</button></div>
+    <div class="grid g4">
+      ${kpi('源库总占用', bytes(src.total_bytes), `堆 ${bytes(src.heap_bytes)} · 索引 ${bytes(src.index_bytes)}`)}
+      ${kpi('冷存储占用', bytes(cold.bytes), `未压缩 ${bytes(cold.raw_bytes)}`)}
+      ${kpi('冷存压缩比', cold.ratio ? cold.ratio.toFixed(1)+'×' : '–', '相对估算源库行占用 '+bytes(cold.source_bytes_est))}
+      ${kpi('冷存占源库', coldVsSrc.toFixed(1)+'%', fmt(cold.rows)+' 行 / '+cold.segments+' 段')}
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="row between"><h3>按月分布</h3>
+        <div class="legend"><span><i style="background:#1e40af"></i>冷存行数</span><span><i style="background:#8b5cf6"></i>压缩后体积</span></div></div>
+      <div class="sparkline" style="height:110px">${s.by_month.map(b => `
+        <div title="${h(b.day)} · ${fmt(b.rows)} 行 · ${bytes(b.bytes)}" style="height:${Math.max(2, 100*b.rows/maxRows)}%"></div>`).join('') || '<div class="empty" style="width:100%">暂无冷数据</div>'}</div>
+      <div class="muted mono" style="display:flex;justify-content:space-between;font-size:10.5px;margin-top:6px">
+        <span>${s.by_month[0]?.day || ''}</span><span>${s.by_month[s.by_month.length-1]?.day || ''}</span></div>
+    </div>
+    <div class="split" style="margin-top:16px">
+      <div class="card" style="padding:4px 0">
+        <h3 style="padding:12px 14px 0">冷存段</h3>
+        <div style="max-height:420px;overflow:auto">
+        <table><thead><tr><th>#</th><th>时间范围</th><th>行数</th><th>大小</th><th>压缩比</th><th>SHA256</th></tr></thead>
+        <tbody>${s.segments.slice().reverse().map(seg => `
+          <tr><td>${seg.id}</td><td class="mono" style="font-size:11px">${tshort(seg.min_time)}<br>${tshort(seg.max_time)}</td>
+            <td>${fmt(seg.rows)}</td><td class="mono">${bytes(seg.size_bytes)}</td>
+            <td>${seg.raw_bytes>0?(seg.raw_bytes/seg.size_bytes).toFixed(1)+'×':'–'}</td>
+            <td class="seg-cell mono" title="${h(seg.sha256)}">${h(seg.sha256?.slice(0,16))}…</td></tr>`).join('')
+          || `<tr><td colspan="6" class="empty">暂无段</td></tr>`}</tbody></table>
+        </div>
+      </div>
+      <div>
+        ${coldQueryMetricsCard(status.cold_query_metrics)}
+      </div>
+    </div>`;
+  $('#refresh').onclick = () => render();
+}
+
+// ---------- Query ----------
+function queryDefaults() {
+  const now = new Date();
+  const from = new Date(now.getTime() - 365*24*3600*1000);
+  return {from: from.toISOString().slice(0,10), to: now.toISOString().slice(0,10)};
+}
+async function renderQuery() {
+  if (!state.queryDefaults) state.queryDefaults = queryDefaults();
+  const d = state.queryDefaults;
+  $('#view').innerHTML = `
+    <div class="row between"><div><h2>归档查询</h2>
+      <div class="sub">同一接口同时检索热数据与冷数据，按 (created_at, id) 倒序合并；调用方无需感知数据所在层。</div></div>
+      <button id="refresh">刷新</button></div>
+    <div class="card">
+      <div class="grid" style="grid-template-columns:repeat(6,minmax(0,1fr));gap:12px">
+        <label class="field">开始日期<input id="q-from" type="date" value="${d.from}"></label>
+        <label class="field">结束日期<input id="q-to" type="date" value="${d.to}"></label>
+        <label class="field">商户 ID<input id="q-merchant" type="number" placeholder="任意"></label>
+        <label class="field">状态<select id="q-status"><option value="">任意</option><option>approved</option><option>declined</option><option>refunded</option><option>pending</option></select></label>
+        <label class="field">渠道<select id="q-channel"><option value="">任意</option><option>pos</option><option>online</option><option>mobile</option><option>atm</option></select></label>
+        <label class="field">区域<select id="q-region"><option value="">任意</option><option>APAC</option><option>EMEA</option><option>AMER</option><option>LATAM</option></select></label>
+        <label class="field">最小金额<input id="q-min" type="number" placeholder="分"></label>
+        <label class="field">最大金额<input id="q-max" type="number" placeholder="分"></label>
+        <label class="field">交易号<input id="q-txn" placeholder="TXN..."></label>
+        <label class="field">返回条数<input id="q-limit" type="number" value="50" min="1" max="1000"></label>
+        <div class="field" style="justify-content:flex-end"><button class="primary" id="q-run">查询</button></div>
+      </div>
+      <div class="legend" style="margin-top:12px">
+        <span>提示：跨冷热分界点的查询最能体现合并效果。冷查询受独立并发与 QPS 限制。</span>
+      </div>
+    </div>
+    <div id="q-result" style="margin-top:16px"></div>`;
+  $('#refresh').onclick = () => render();
+  $('#q-run').onclick = () => runQuery();
+  $('#q-run').click();
+}
+
+async function runQuery(cursor) {
+  const params = new URLSearchParams();
+  const from = new Date($('#q-from').value + 'T00:00:00Z');
+  const to = new Date($('#q-to').value + 'T23:59:59Z');
+  params.set('from', from.toISOString()); params.set('to', to.toISOString());
+  const m = $('#q-merchant').value; if (m) params.set('merchant_id', m);
+  for (const [id, key] of [['#q-status','status'],['#q-channel','channel'],['#q-region','region']]) {
+    const v = $(id).value; if (v) params.set(key, v);
+  }
+  for (const [id, key] of [['#q-min','min_amount'],['#q-max','max_amount']]) {
+    const v = $(id).value; if (v) params.set(key, v);
+  }
+  const txn = $('#q-txn').value.trim(); if (txn) params.set('txn_no', txn);
+  params.set('limit', $('#q-limit').value || '50');
+  if (cursor) { params.set('cursor', cursor.time + '.' + cursor.id); }
+  const box = $('#q-result');
+  box.innerHTML = '<div class="card"><div class="empty">查询中…</div></div>';
+  try {
+    const t0 = performance.now();
+    const res = await api('/api/query?' + params.toString());
+    const elapsed = performance.now() - t0;
+    const st = res.stats, cq = st.cold_query;
+    box.innerHTML = `
+      <div class="grid g4">
+        ${kpi('返回行数', fmt(res.rows.length), '热 '+st.hot_rows+' · 冷 '+st.cold_rows + (st.deduped?` · 去重 ${st.deduped}`:''))}
+        ${kpi('端到端延迟', elapsed.toFixed(0)+' ms', '冷查询内部 '+(cq.duration/1e6).toFixed(1)+' ms')}
+        ${kpi('块剪枝', fmt(cq.blocks_pruned), '扫描 '+fmt(cq.blocks_scanned)+' / 共 '+fmt(cq.blocks_total))}
+        ${kpi('读取冷字节', bytes(cq.bytes_read), '缓存命中 '+cq.cache_hits+' 次')}
+      </div>
+      <div class="card" style="margin-top:14px;padding:4px 0">
+        <div class="row between" style="padding:12px 14px 0"><h3 style="margin:0">结果</h3>
+          <span class="muted" style="font-size:12px">${res.has_more?'还有更多':'已到末尾'}</span></div>
+        <div style="overflow:auto"><table>
+          <thead><tr><th>ID</th><th>交易号</th><th>商户</th><th>卡尾号</th><th>金额</th><th>币种</th><th>状态</th><th>渠道</th><th>区域</th><th>风险分</th><th>创建时间</th><th>备注</th></tr></thead>
+          <tbody>${res.rows.map(r => `<tr>
+            <td class="mono">${r.id}</td><td class="mono">${h(r.txn_no)}</td><td>${r.merchant_id}</td>
+            <td class="mono">${h(r.card_last4)}</td><td class="mono">${(r.amount_cents/100).toFixed(2)}</td>
+            <td>${h(r.currency)}</td><td>${h(r.status)}</td><td>${h(r.channel)}</td><td>${h(r.region)}</td>
+            <td>${r.risk_score}</td><td class="mono" style="font-size:11px">${r.created_at.slice(0,19).replace('T',' ')}</td>
+            <td class="muted" style="font-size:11px">${r.memo?h(r.memo):'–'}</td></tr>`).join('')
+            || `<tr><td colspan="12" class="empty">无匹配数据</td></tr>`}</tbody>
+        </table></div>
+        ${res.next?`<div class="row" style="justify-content:flex-end;padding:12px 14px"><button id="q-more">下一页 →</button></div>`:''}
+      </div>`;
+    const more = $('#q-more');
+    if (more) more.onclick = () => runQuery(res.next);
+  } catch (e) {
+    box.innerHTML = `<div class="banner err">查询失败：${h(e.message)}${e.message.includes('limit')?'（冷查询被限流，请稍后重试）':''}</div>`;
+  }
+}
+
+// ---------- Holds & Manifests ----------
+async function renderHolds() {
+  const [holds, manifests] = await Promise.all([api('/api/holds'), api('/api/manifests?limit=40')]);
+  state.holds = holds; state.manifests = manifests;
+  const active = holds.filter(h => h.active);
+  $('#view').innerHTML = `
+    <div class="row between"><div><h2>保全记录</h2>
+      <div class="sub">涉诉数据打上保全标记后，即使超过销毁期限也不会被删除；解除保全后才可重新进入销毁流程。</div></div>
+      <div class="row"><button id="refresh">刷新</button><button class="primary" id="add-hold">+ 新增保全</button></div></div>
+    <div class="grid g3">
+      ${kpi('生效中保全', fmt(active.length), '共 ' + fmt(holds.length) + ' 条记录')}
+      ${kpi('销毁清单', fmt(manifests.length), '可审计、含逐行 ID 摘要')}
+      ${kpi('清单累计销毁', fmt(manifests.reduce((a,m)=>a+m.rows_destroyed,0)), '行')}
+    </div>
+    <div class="section-title">保全记录</div>
+    <div class="card" style="padding:4px 0">
+      <table><thead><tr><th>案号</th><th>范围</th><th>目标</th><th>时间范围</th><th>原因</th><th>状态</th><th>创建</th><th></th></tr></thead>
+      <tbody>${holds.map(h => `<tr>
+        <td><b>${h.case_no}</b></td>
+        <td>${h.scope==='txn'?'交易号':h.scope==='merchant'?'商户':h.scope==='txn_range'?'ID 区间':'时间区间'}</td>
+        <td class="mono" style="font-size:11px">${h.scope==='txn_range'?fmt(h.target_from)+' – '+fmt(h.target_to): h.scope==='time_range'?(h.time_from?dt(h.time_from):'…')+' → '+(h.time_to?dt(h.time_to):'…'):h.target_value}</td>
+        <td class="muted" style="font-size:11.5px">${h.reason?h.reason:'–'}</td>
+        <td>${h.active?'<span class="tag t-purple">保全中</span>':'<span class="tag t-gray">已解除</span>'}</td>
+        <td class="mono" style="font-size:11px">${dt(h.created_at)}</td>
+        <td>${h.active?`<button class="sm" data-release="${h.id}">解除</button>`:''}</td>
+      </tr>`).join('') || `<tr><td colspan="8" class="empty">暂无保全记录</td></tr>`}</tbody></table>
+    </div>
+    <div class="section-title">销毁清单（可审计）</div>
+    <div class="card" style="padding:4px 0">
+      <table><thead><tr><th>#</th><th>时间</th><th>销毁截止</th><th>销毁行数</th><th>保全保留</th><th>释放空间</th><th>行 ID 摘要</th><th></th></tr></thead>
+      <tbody>${manifests.map(m => `<tr>
+        <td><b>#${m.id}</b><div class="muted" style="font-size:11px">job ${m.job_id}</div></td>
+        <td class="mono" style="font-size:11px">${dt(m.created_at)}</td>
+        <td class="mono" style="font-size:11px">${dt(m.cutoff)}</td>
+        <td>${fmt(m.rows_destroyed)}</td>
+        <td>${m.rows_held?`<span style="color:#fbbf24">${fmt(m.rows_held)}</span>`:'0'}</td>
+        <td class="mono">${bytes(m.bytes_freed)}</td>
+        <td class="mono" style="font-size:11px" title="${h(m.id_sha256)}">${h(m.id_sha256.slice(0,16))}…</td>
+        <td><button class="sm" data-manifest="${m.id}">查看</button>
+            <a class="btn sm" href="/api/manifests/${m.id}/download">下载</a></td>
+      </tr>`).join('') || `<tr><td colspan="8" class="empty">暂无销毁清单</td></tr>`}</tbody></table>
+    </div>`;
+  $('#refresh').onclick = () => render();
+  $('#add-hold').onclick = holdModal;
+  document.querySelectorAll('[data-release]').forEach(b => b.onclick = async () => {
+    if (!confirm('解除保全后，相关数据将重新纳入到期销毁范围。继续？')) return;
+    try { await api('/api/holds/'+b.dataset.release+'/release', {method:'POST'}); toast('保全已解除'); render(); }
+    catch(e) { toast(e.message,'err'); }
+  });
+  document.querySelectorAll('[data-manifest]').forEach(b => b.onclick = () => manifestModal(b.dataset.manifest));
+}
+
+function holdModal() {
+  const bg = document.createElement('div'); bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal">
+    <h3>新增数据保全</h3>
+    <div class="sub">命中保全范围的冷/热数据在销毁流程中会被保留，并在销毁清单中列明。</div>
+    <div class="form-grid">
+      <label class="field full">案号 / 工单号<input id="h-case" placeholder="CASE-2026-001"></label>
+      <label class="field">范围类型<select id="h-scope">
+        <option value="txn">交易号</option><option value="txn_range">ID 区间</option>
+        <option value="merchant">商户</option><option value="time_range">时间区间</option></select></label>
+      <label class="field">目标值<input id="h-target" placeholder="TXN000000000123"></label>
+      <label class="field" id="h-from-wrap" style="display:none">起始 ID<input id="h-from" type="number"></label>
+      <label class="field" id="h-to-wrap" style="display:none">结束 ID<input id="h-to" type="number"></label>
+      <label class="field" id="h-tfrom-wrap" style="display:none">时间从<input id="h-tfrom" type="datetime-local"></label>
+      <label class="field" id="h-tto-wrap" style="display:none">时间至<input id="h-tto" type="datetime-local"></label>
+      <label class="field full">原因<input id="h-reason" placeholder="诉讼/监管调阅"></label>
+    </div>
+    <div class="row" style="justify-content:flex-end;margin-top:18px">
+      <button id="h-cancel">取消</button><button class="primary" id="h-save">创建保全</button></div>
+  </div>`;
+  document.body.appendChild(bg);
+  const scope = bg.querySelector('#h-scope');
+  const sync = () => {
+    const v = scope.value;
+    bg.querySelector('#h-target').parentElement.style.display = (v==='txn'||v==='merchant')?'':'none';
+    bg.querySelector('#h-from-wrap').style.display = v==='txn_range'?'':'none';
+    bg.querySelector('#h-to-wrap').style.display = v==='txn_range'?'':'none';
+    bg.querySelector('#h-tfrom-wrap').style.display = v==='time_range'?'':'none';
+    bg.querySelector('#h-tto-wrap').style.display = v==='time_range'?'':'none';
+  };
+  scope.onchange = sync; sync();
+  bg.querySelector('#h-cancel').onclick = () => bg.remove();
+  bg.onclick = (e) => { if (e.target === bg) bg.remove(); };
+  bg.querySelector('#h-save').onclick = async () => {
+    const body = {case_no: $('#h-case').value, reason: $('#h-reason').value, scope: scope.value,
+      target_value: $('#h-target').value, target_from: +($('#h-from').value||0), target_to: +($('#h-to').value||0),
+      time_from: $('#h-tfrom').value ? new Date($('#h-tfrom').value).toISOString() : null,
+      time_to: $('#h-tto').value ? new Date($('#h-tto').value).toISOString() : null, created_by:'console'};
+    try { await api('/api/holds', {method:'POST', body: JSON.stringify(body)}); bg.remove(); toast('保全已创建'); render(); }
+    catch(e) { toast(e.message,'err'); }
+  };
+}
+
+async function manifestModal(id) {
+  const data = await api('/api/manifests/'+id);
+  const doc = data.document;
+  const bg = document.createElement('div'); bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal" style="width:820px">
+    <div class="row between"><h3>销毁清单 #${id}</h3><button id="d-close">关闭</button></div>
+    <div class="sub">${h(data.manifest.summary)}</div>
+    <dl class="kv">
+      <dt>销毁截止</dt><dd>${dt(data.manifest.cutoff)}</dd>
+      <dt>销毁 / 保全行数</dt><dd>${fmt(data.manifest.rows_destroyed)} / ${fmt(data.manifest.rows_held)}</dd>
+      <dt>释放空间</dt><dd>${bytes(data.manifest.bytes_freed)}</dd>
+      <dt>行 ID 摘要 SHA256</dt><dd class="mono" style="word-break:break-all">${h(data.manifest.id_sha256)}</dd>
+      <dt>清单文件 SHA256</dt><dd class="mono" style="word-break:break-all">${h(data.manifest.file_sha256)}</dd>
+      <dt>文件</dt><dd class="mono" style="word-break:break-all">${h(data.manifest.file_path)}</dd>
+    </dl>
+    <div class="section-title">涉及段</div>
+    <table><thead><tr><th>段</th><th>总行数</th><th>销毁</th><th>保留</th><th>结果</th></tr></thead>
+      <tbody>${data.segments.map(s => `<tr><td class="mono">${s.segment_id}</td><td>${fmt(s.rows_total)}</td>
+        <td>${fmt(s.rows_destroyed)}</td><td>${fmt(s.rows_retained)}</td><td>${h(s.result)}</td></tr>`).join('')}</tbody></table>
+    <div class="section-title">清单原文</div>
+    <pre class="mono" style="max-height:300px;overflow:auto;background:#0b1220;border:1px solid var(--border);border-radius:8px;padding:12px">${h(JSON.stringify(doc,null,2))}</pre>
+  </div>`;
+  document.body.appendChild(bg);
+  bg.querySelector('#d-close').onclick = () => bg.remove();
+  bg.onclick = (e) => { if (e.target === bg) bg.remove(); };
+}
+
+// ---------- router ----------
+async function render() {
+  clearInterval(state.timer);
+  if (!state.status) { try { await loadStatus(); } catch (_) {} }
+  const hash = location.hash.replace(/^#/, '') || 'policies';
+  const [route, arg] = hash.split('/');
+  setActiveNav(route);
+  try {
+    if (route === 'policies') await renderPolicies();
+    else if (route === 'jobs') await renderJobs();
+    else if (route === 'job') await renderJobDetail(arg);
+    else if (route === 'storage') await renderStorage();
+    else if (route === 'query') await renderQuery();
+    else if (route === 'holds') await renderHolds();
+    else { location.hash = '#policies'; return; }
+  } catch (e) {
+    $('#view').innerHTML = `<div class="banner err">加载失败：${h(e.message)}</div>`;
+  }
+  if (route === 'jobs' || route === 'job') {
+    state.timer = setInterval(() => render().catch(()=>{}), 3000);
+  }
+}
+
+window.addEventListener('hashchange', render);
+function tickClock(){ $('#clock').textContent = new Date().toLocaleString('zh-CN',{hour12:false}); }
+tickClock(); setInterval(tickClock, 1000);
+render();
+</script>
+</body>
+</html>

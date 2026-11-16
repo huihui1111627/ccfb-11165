@@ -1,0 +1,36 @@
+{
+  "listen": ":8080",
+  "data_dir": "./data",
+  "control_db": "./data/control.db",
+  "source_dsn": "postgres:///payarchive?sslmode=disable",
+  "regulatory_min_retention_days": 1825,
+  "scheduler_interval": "5m",
+  "auto_archive": true,
+  "auto_destroy": true,
+  "archive": {
+    "batch_rows": 50000,
+    "delete_chunk_rows": 2000,
+    "delete_pause_ms": 5,
+    "target_segment_rows": 1000000,
+    "workers": 8
+  },
+  "cold_query": {
+    "max_concurrent": 4,
+    "max_qps": 10,
+    "queue_timeout_ms": 1000,
+    "max_bytes_per_query": 134217728,
+    "max_limit": 1000,
+    "default_limit": 100,
+    "max_cold_rows_per_segment": 2000
+  },
+  "demo": {
+    "rows": 30000000,
+    "years": 7,
+    "cold_after_days": 1095,
+    "destroy_after_days": 1825,
+    "live_write_rps": 30,
+    "query_cases": 24,
+    "bench_iterations": 40,
+    "report_dir": "./data/report"
+  }
+}
